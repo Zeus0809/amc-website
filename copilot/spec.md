@@ -11,6 +11,8 @@
 
 ### MVP Functional Requirements
 - **Authentication:** Individual user accounts (username/password)
+- **User Registration:** Self-service registration with admin approval workflow
+- **Admin Approval:** Admin interface to approve/deny pending user registrations
 - **Event Management:** Display upcoming events, prevent RSVP to past events
 - **RSVP System:** Simple yes/no RSVP with email confirmation
 - **About Page:** Static group description and purpose
@@ -132,6 +134,8 @@ CREATE TABLE users (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
+    is_approved BOOLEAN DEFAULT FALSE,
+    is_admin BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -200,6 +204,10 @@ amc-website/
 ├── templates/
 │   ├── base.html         # Base template
 │   ├── login.html        # Login form
+│   ├── register.html     # Registration form
+│   ├── pending.html      # Pending approval page
+│   ├── admin/
+│   │   └── users.html    # Admin user approval interface
 │   ├── events.html       # Main events page
 │   └── about.html        # About page
 ├── models/
@@ -224,15 +232,51 @@ amc-website/
 **Components:**
 - AMC logo
 - Username/password form
+- Link to registration page
 - Error messages
 - Clean, centered design
 
 **Features:**
 - Session management
 - Password validation
+- Approval status checking
 - Redirect to events page after login
 
-### 2. Events Page (`/events`) - Main Dashboard
+### 2. Registration Page (`/register`)
+**Purpose:** Allow new users to create accounts pending approval  
+**Components:**
+- AMC logo
+- Registration form (username, email, password, first name, last name)
+- Form validation messages
+- Link back to login page
+
+**Features:**
+- Input validation
+- Duplicate username/email checking
+- Password strength requirements
+- Redirect to pending approval page after registration
+
+### 3. Pending Approval Page (`/pending`)
+**Purpose:** Inform users their account is awaiting admin approval  
+**Components:**
+- Message explaining approval process
+- Contact information for questions
+- Link back to login page
+
+### 4. Admin User Management (`/admin/users`)
+**Purpose:** Admin interface to approve/deny user registrations  
+**Components:**
+- List of pending users with details
+- Approve/deny buttons for each user
+- User details display
+
+**Features:**
+- Admin-only access (requires is_admin=True)
+- Bulk approval actions
+- Email notifications on approval/denial
+- User status management
+
+### 5. Events Page (`/events`) - Main Dashboard
 **Purpose:** Display all upcoming events and handle RSVPs  
 **Components:**
 - Navigation header with logout
@@ -252,7 +296,7 @@ amc-website/
 - Visual distinction for past events
 - Prevent RSVP to past events
 
-### 3. About Page (`/about`)
+### 6. About Page (`/about`)
 **Purpose:** Information about Arlington Men's Circle  
 **Components:**
 - Group description
@@ -266,11 +310,25 @@ amc-website/
 
 ## User Flows
 
+### Registration Flow
+1. User visits site → redirected to login page
+2. Click "Register" link → registration form
+3. Fill out registration form → account created (is_approved=False)
+4. Redirect to pending approval page
+5. Admin approves account → user can login
+
 ### Authentication Flow
 1. User visits site → redirected to login
-2. Enter credentials → session created
-3. Access events page → browse and RSVP
-4. Logout → session destroyed
+2. Enter credentials → check is_approved status
+3. If approved: session created → access events page
+4. If not approved: redirect to pending approval page
+5. Logout → session destroyed
+
+### Admin Approval Flow
+1. Admin logs in → access to admin panel
+2. View pending users → see registration details
+3. Approve/deny users → email notifications sent
+4. Approved users can now login and access events
 
 ### RSVP Flow (MVP)
 1. View events page → see upcoming events
@@ -279,17 +337,26 @@ amc-website/
 4. Button changes to "Already attending"
 5. Attendee count updates on page
 
-### Admin Flows (Manual for MVP)
-1. Admin manually adds events via database/config
-2. Admin manually manages users via database
+### Admin Flows
+1. Admin manually adds events via database/config (MVP)
+2. Admin approves/denies user registrations via admin interface
 3. Email confirmations logged to console (MVP) or sent via SES
+4. Admin manages user accounts and permissions
 
 ## API Endpoints
 
 ### Authentication
 - `GET /login` - Login page
 - `POST /login` - Process login
+- `GET /register` - Registration page
+- `POST /register` - Process registration
+- `GET /pending` - Pending approval page
 - `GET /logout` - Logout user
+
+### Admin
+- `GET /admin/users` - Admin user management page
+- `POST /admin/users/<id>/approve` - Approve user registration
+- `POST /admin/users/<id>/deny` - Deny user registration
 
 ### Events
 - `GET /` or `/events` - Main events page (homepage)
