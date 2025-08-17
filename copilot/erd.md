@@ -13,46 +13,51 @@
 │ first_name       VARCHAR(50)        │
 │ last_name        VARCHAR(50)        │
 │ is_active        BOOLEAN DEFAULT T  │
+│ is_approved      BOOLEAN DEFAULT F  │
+│ is_admin         BOOLEAN DEFAULT F  │
 │ created_at       TIMESTAMP          │
 └─────────────────────────────────────┘
                     │
                     │ (1:many)
+                    ▼
+          ┌─────────────────────────┐
+          │         RSVPS           │ 
+          │     (JOIN TABLE)        │
+          ├─────────────────────────┤ 
+          │ id (PK) UUID            │ 
+          │ user_id (FK) → users.id │ 
+          │ event_id (FK)→events.id │ 
+          │ status VARCHAR(20)      │ 
+          │ created_at TIMESTAMP    │ 
+          │                         │ 
+          │ UNIQUE(user_id,event_id)│ 
+          └─────────────────────────┘           
+                    ▲                           
+                    │ (many:1)
                     │
-        ┌───────────┼───────────────────────────┐
-        │           │                           │
-        │           │                           │
-        ▼           ▼                           ▼
-┌──────────────┐ ┌─────────────────────────┐ ┌─────────────────────────────┐
-│    EVENTS    │ │         RSVPS           │ │           PHOTOS            │
-├──────────────┤ ├─────────────────────────┤ ├─────────────────────────────┤
-│ id (PK) UUID │ │ id (PK) UUID            │ │ id (PK) UUID                │
-│ title        │ │ user_id (FK) → users.id │ │ filename                    │
-│ description  │ │ event_id (FK)→events.id │ │ caption                     │
-│ date_time    │ │ status                  │ │ event_id (FK) → events.id   │
-│ location     │ │ created_at              │ │ uploaded_by (FK)→ users.id  │
-│ max_attendees│ │                         │ │ s3_url                      │
-│ created_by(FK)│ │ UNIQUE(user_id,event_id)│ │ created_at                  │
-│ created_at   │ └─────────────────────────┘ └─────────────────────────────┘
-└──────────────┘           │                           │
-        │                  │                           │
-        │ (1:many)         │ (many:1)                  │ (many:1)
-        └──────────────────┘                           │
-                                                       │
-        ┌──────────────────────────────────────────────┘
-        │ (1:many)
-        ▼
-┌─────────────────────────────────────┐
-│             EVENTS                  │
-│         (same table)                │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│               EVENTS                 │ 
+├──────────────────────────────────────┤ 
+│ id (PK) UUID                         │ 
+│ title        VARCHAR(200)            │ 
+│ description  TEXT                    │ 
+│ date_time    TIMESTAMP               │ 
+│ location     VARCHAR(200)            │ 
+│ max_attendees INTEGER                │ 
+│ created_at   TIMESTAMP               │ 
+└──────────────────────────────────────┘           
 
 RELATIONSHIPS:
-• users → events (1:many)     : One user can create many events
-• users → rsvps (1:many)      : One user can RSVP to many events  
-• events → rsvps (1:many)     : One event can have many RSVPs
-• users → photos (1:many)     : One user can upload many photos
-• events → photos (1:many)    : One event can have many photos
-• user_id + event_id (unique) : One user can only RSVP once per event
+• users ↔ events (many:many) : Many users can attend many events
+  - Implemented via RSVP join table
+• users → rsvps (1:many)     : One user can RSVP to many events  
+• events → rsvps (1:many)    : One event can have many RSVPs
+• user_id + event_id (unique): One user can only RSVP once per event
+
+NOTES:
+- RSVP table serves as the join table for Users ↔ Events many-to-many relationship
+- No created_by field needed - events are manually created by admin
+- Photos table omitted from MVP (will be added in Phase 2)
 ```
 
 ## Database Relationships Explained
@@ -73,13 +78,6 @@ RELATIONSHIPS:
 - `UNIQUE(user_id, event_id)` prevents duplicate RSVPs
 - `status` field allows for different RSVP types (attending, maybe, not_attending)
 - Acts as the core functionality for event attendance tracking
-
-### PHOTOS Table
-- Can be linked to specific events OR be general group photos
-- `event_id` can be NULL for general group photos
-- `uploaded_by` tracks who uploaded each photo
-- `s3_url` field for flexible storage (local or S3)
-- Supports both event-specific and general gallery photos
 
 ## Key Constraints
 

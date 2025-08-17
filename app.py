@@ -1,16 +1,13 @@
 import os
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_mail import Mail
-from flask_migrate import Migrate
 from config import config
+from models import db, migrate, init_db, User
 
-# Initialize Flask extensions
-db = SQLAlchemy()
+# Initialize Flask extensions (login and mail only - db handled in models)
 login_manager = LoginManager()
 mail = Mail()
-migrate = Migrate()
 
 def create_app(config_name=None):
     """Application factory pattern for flexible configuration."""
@@ -31,21 +28,21 @@ def create_app(config_name=None):
     except OSError:
         pass
     
-    # Initialize extensions with app
-    db.init_app(app)
+    # Initialize database with all models
+    init_db(app)
+    
+    # Initialize other extensions with app
     login_manager.init_app(app)
     mail.init_app(app)
-    migrate.init_app(app, db)
     
     # Configure Flask-Login
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
     login_manager.login_message_category = 'info'
     
-    # User loader for Flask-Login (will be defined in models)
+    # User loader for Flask-Login
     @login_manager.user_loader
     def load_user(user_id):
-        from models.user import User
         return User.query.get(user_id)
     
     # Register blueprints (routes)
@@ -54,10 +51,6 @@ def create_app(config_name=None):
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(events_bp)
-    
-    # Database tables will be created in Chunk 1B with proper models
-    # with app.app_context():
-    #     db.create_all()
     
     return app
 
