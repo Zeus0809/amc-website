@@ -2,312 +2,257 @@
 Test Database Initialization and Basic Entity Creation
 Tests basic functionality of User, Event, and RSVP models
 """
-import os
-import sys
 from datetime import datetime, timedelta
 
-# Add project root to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def test_database_initialization():
+class TestDatabaseInitialization:
     """Test database creation and model imports"""
-    print('=== Testing Database Initialization ===\n')
     
-    # Set up test database path in temp directory
-    import tempfile
-    test_db_path = os.path.join(tempfile.gettempdir(), 'test_basic.db')
-    os.environ['DEV_DATABASE_URL'] = f'sqlite:///{test_db_path}'
-    
-    try:
-        from app import app
-        with app.app_context():
-            from models import db, User, Event, RSVP
-            
-            # Clean start
-            if os.path.exists(test_db_path):
-                os.remove(test_db_path)
-            
-            # Create tables
-            db.create_all()
-            print('✅ Database tables created successfully')
-            
-            # Verify tables exist
-            inspector = db.inspect(db.engine)
-            tables = inspector.get_table_names()
-            expected_tables = ['users', 'events', 'rsvps']
-            
-            for table in expected_tables:
-                if table in tables:
-                    print(f'✅ Table "{table}" created')
-                else:
-                    print(f'❌ Table "{table}" missing')
-                    return False
-            
-            return True
-            
-    except Exception as e:
-        print(f'❌ Database initialization failed: {e}')
-        return False
-    finally:
-        # Clean up
-        if os.path.exists(test_db_path):
-            os.remove(test_db_path)
-
-def test_user_model():
-    """Test User model creation and methods"""
-    print('\n=== Testing User Model ===\n')
-    
-    import tempfile
-    test_db_path = os.path.join(tempfile.gettempdir(), 'test_user.db')
-    os.environ['DEV_DATABASE_URL'] = f'sqlite:///{test_db_path}'
-    
-    try:
-        from app import app
-        with app.app_context():
-            from models import db, User
-            
-            if os.path.exists(test_db_path):
-                os.remove(test_db_path)
-            
-            db.create_all()
-            
-            # Create admin user
-            admin = User(
-                username='admin',
-                email='admin@test.com',
-                password='admin123',
-                first_name='Admin',
-                last_name='User',
-                is_admin=True
-            )
-            admin.is_approved = True
-            
-            # Create regular user
-            user = User(
-                username='testuser',
-                email='user@test.com',
-                password='password123',
-                first_name='Test',
-                last_name='User'
-            )
-            
-            db.session.add_all([admin, user])
-            db.session.commit()
-            
-            # Test user properties
-            print(f'✅ Admin created: {admin.full_name}')
-            print(f'   - Can login: {admin.can_login()}')
-            print(f'   - Is admin: {admin.is_admin}')
-            
-            print(f'✅ Regular user created: {user.full_name}')
-            print(f'   - Can login: {user.can_login()}')
-            print(f'   - Is approved: {user.is_approved}')
-            
-            # Test password verification
-            if admin.check_password('admin123'):
-                print('✅ Admin password verification works')
-            else:
-                print('❌ Admin password verification failed')
-                return False
-            
-            if user.check_password('password123'):
-                print('✅ User password verification works')
-            else:
-                print('❌ User password verification failed')
-                return False
-            
-            # Test user queries
-            pending_users = User.get_pending_users()
-            approved_users = User.get_approved_users()
-            
-            print(f'✅ Pending users: {len(pending_users)}')
-            print(f'✅ Approved users: {len(approved_users)}')
-            
-            return True
-            
-    except Exception as e:
-        print(f'❌ User model test failed: {e}')
-        return False
-    finally:
-        if os.path.exists(test_db_path):
-            os.remove(test_db_path)
-
-def test_event_model():
-    """Test Event model creation and methods"""
-    print('\n=== Testing Event Model ===\n')
-    
-    import tempfile
-    test_db_path = os.path.join(tempfile.gettempdir(), 'test_event.db')
-    os.environ['DEV_DATABASE_URL'] = f'sqlite:///{test_db_path}'
-    
-    try:
-        from app import app
-        with app.app_context():
-            from models import db, Event
-            
-            if os.path.exists(test_db_path):
-                os.remove(test_db_path)
-            
-            db.create_all()
-            
-            # Create future event
-            future_event = Event(
-                title='Future AMC Meeting',
-                date_time=datetime.now() + timedelta(days=14),
-                description='Upcoming club meeting',
-                location='Club House',
-                max_attendees=50
-            )
-            
-            # Create past event
-            past_event = Event(
-                title='Past AMC Meeting',
-                date_time=datetime.now() - timedelta(days=7),
-                description='Previous meeting',
-                location='Club House'
-            )
-            
-            db.session.add_all([future_event, past_event])
-            db.session.commit()
-            
-            # Test event properties
-            print(f'✅ Future event: {future_event.title}')
-            print(f'   - Is past: {future_event.is_past}')
-            print(f'   - Formatted date: {future_event.formatted_date}')
-            print(f'   - Attendee count: {future_event.get_attendee_count()}')
-            
-            print(f'✅ Past event: {past_event.title}')
-            print(f'   - Is past: {past_event.is_past}')
-            
-            # Test static methods
-            upcoming_events = Event.get_upcoming_events()
-            past_events = Event.get_past_events()
-            
-            print(f'✅ Upcoming events: {len(upcoming_events)}')
-            print(f'✅ Past events: {len(past_events)}')
-            
-            return True
-            
-    except Exception as e:
-        print(f'❌ Event model test failed: {e}')
-        return False
-    finally:
-        if os.path.exists(test_db_path):
-            os.remove(test_db_path)
-
-def test_rsvp_model():
-    """Test RSVP model and relationships"""
-    print('\n=== Testing RSVP Model ===\n')
-    
-    import tempfile
-    test_db_path = os.path.join(tempfile.gettempdir(), 'test_rsvp.db')
-    os.environ['DEV_DATABASE_URL'] = f'sqlite:///{test_db_path}'
-    
-    try:
-        from app import app
-        with app.app_context():
-            from models import db, User, Event, RSVP
-            
-            if os.path.exists(test_db_path):
-                os.remove(test_db_path)
-            
-            db.create_all()
-            
-            # Create user and event
-            user = User(
-                username='testuser',
-                email='test@test.com',
-                password='password123',
-                first_name='Test',
-                last_name='User'
-            )
-            user.is_approved = True
-            
-            event = Event(
-                title='Test Event',
-                date_time=datetime.now() + timedelta(days=7),
-                description='Test event for RSVP'
-            )
-            
-            db.session.add_all([user, event])
-            db.session.commit()
-            
-            # Test RSVP creation
-            rsvp = RSVP.create(user.id, event.id, 'attending')
-            
-            if rsvp:
-                print('✅ RSVP created successfully')
-                print(f'   - Status: {rsvp.status}')
-                print(f'   - Is attending: {rsvp.is_attending}')
-            else:
-                print('❌ RSVP creation failed')
-                return False
-            
-            # Test attendee count
-            print(f'✅ Event attendee count: {event.get_attendee_count()}')
-            
-            # Test duplicate prevention
-            try:
-                duplicate_rsvp = RSVP.create(user.id, event.id, 'maybe')
-                print('❌ ERROR: Duplicate RSVP should have been prevented')
-                return False
-            except ValueError as e:
-                print(f'✅ Duplicate prevention works: {e}')
-            
-            # Test status update
-            if rsvp.update_status('maybe'):
-                print('✅ RSVP status update successful')
-                print(f'   - Updated attendee count: {event.get_attendee_count()}')
-            else:
-                print('❌ RSVP status update failed')
-                return False
-            
-            return True
-            
-    except Exception as e:
-        print(f'❌ RSVP model test failed: {e}')
-        return False
-    finally:
-        if os.path.exists(test_db_path):
-            os.remove(test_db_path)
-
-def run_all_tests():
-    """Run all basic entity tests"""
-    print('🧪 AMC Website - Basic Entity Tests\n')
-    print('=' * 50)
-    
-    tests = [
-        test_database_initialization,
-        test_user_model,
-        test_event_model,
-        test_rsvp_model
-    ]
-    
-    passed = 0
-    failed = 0
-    
-    for test in tests:
-        try:
-            if test():
-                passed += 1
-                print(f'\n✅ {test.__name__} PASSED')
-            else:
-                failed += 1
-                print(f'\n❌ {test.__name__} FAILED')
-        except Exception as e:
-            failed += 1
-            print(f'\n❌ {test.__name__} FAILED with exception: {e}')
+    def test_database_tables_created(self, db):
+        """Test that all required database tables are created"""
+        from models import User, Event, RSVP
         
-        print('-' * 50)
+        # Verify tables exist
+        inspector = db.inspect(db.engine)
+        tables = inspector.get_table_names()
+        expected_tables = ['users', 'events', 'rsvps']
+        
+        for table in expected_tables:
+            assert table in tables, f'Table "{table}" should be created'
     
-    print(f'\n🎉 Test Summary: {passed} passed, {failed} failed')
-    
-    if failed == 0:
-        print('✅ All basic entity tests PASSED!')
-        return True
-    else:
-        print('❌ Some tests FAILED!')
-        return False
+    def test_models_import_successfully(self):
+        """Test that all models can be imported without errors"""
+        from models import User, Event, RSVP
+        
+        # Verify models have required attributes
+        assert hasattr(User, '__tablename__')
+        assert hasattr(Event, '__tablename__')
+        assert hasattr(RSVP, '__tablename__')
 
-if __name__ == '__main__':
-    run_all_tests()
+
+class TestUserModel:
+    """Test User model functionality"""
+    
+    def test_user_creation(self, db):
+        """Test basic user creation"""
+        from models import User
+        
+        user = User(
+            username='testuser',
+            email='test@example.com',
+            password='password123',
+            first_name='Test',
+            last_name='User'
+        )
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        assert user.id is not None
+        assert user.username == 'testuser'
+        assert user.email == 'test@example.com'
+        assert user.full_name == 'Test User'
+        assert not user.is_approved  # Should default to False
+        assert not user.is_admin     # Should default to False
+    
+    def test_password_hashing(self):
+        """Test password hashing and verification"""
+        from models import User
+        
+        user = User(
+            username='testuser',
+            email='test@example.com',
+            password='password123',
+            first_name='Test',
+            last_name='User'
+        )
+        
+        # Password should be hashed
+        assert user.password_hash != 'password123'
+        
+        # Password verification should work
+        assert user.check_password('password123')
+        assert not user.check_password('wrongpassword')
+    
+    def test_user_approval_status(self, admin_user, regular_user, pending_user):
+        """Test user approval functionality"""
+        # Admin should be able to login
+        assert admin_user.can_login()
+        assert admin_user.is_admin
+        assert admin_user.is_approved
+        
+        # Regular approved user should be able to login
+        assert regular_user.can_login()
+        assert not regular_user.is_admin
+        assert regular_user.is_approved
+        
+        # Pending user should not be able to login
+        assert not pending_user.can_login()
+        assert not pending_user.is_admin
+        assert not pending_user.is_approved
+    
+    def test_user_queries(self, db, admin_user, regular_user, pending_user):
+        """Test user query methods"""
+        from models import User
+        
+        # Test pending users query
+        pending_users = User.get_pending_users()
+        assert len(pending_users) == 1
+        assert pending_users[0].username == 'pendinguser'
+        
+        # Test approved users query
+        approved_users = User.get_approved_users()
+        assert len(approved_users) == 2  # admin and regular user
+        approved_usernames = [user.username for user in approved_users]
+        assert 'admin' in approved_usernames
+        assert 'testuser' in approved_usernames
+
+
+class TestEventModel:
+    """Test Event model functionality"""
+    
+    def test_event_creation(self, db):
+        """Test basic event creation"""
+        from models import Event
+        
+        event_date = datetime.now() + timedelta(days=7)
+        event = Event(
+            title='Test Event',
+            date_time=event_date,
+            description='This is a test event',
+            location='Test Location'
+        )
+        
+        db.session.add(event)
+        db.session.commit()
+        
+        assert event.id is not None
+        assert event.title == 'Test Event'
+        assert event.description == 'This is a test event'
+        assert event.date_time == event_date
+        assert event.location == 'Test Location'
+    
+    def test_event_past_future_detection(self, future_event, past_event):
+        """Test event past/future detection methods"""
+        assert not future_event.is_past
+        assert past_event.is_past
+    
+    def test_upcoming_events_query(self, db, future_event):
+        """Test query for upcoming events"""
+        from models import Event
+        
+        upcoming_events = Event.get_upcoming_events()
+        assert len(upcoming_events) == 1
+        assert upcoming_events[0].title == 'Future Event'
+
+
+class TestRSVPModel:
+    """Test RSVP model functionality"""
+    
+    def test_rsvp_creation(self, regular_user, future_event):
+        """Test basic RSVP creation"""
+        from models import RSVP
+        
+        rsvp = RSVP.create(
+            user_id=regular_user.id,
+            event_id=future_event.id,
+            status='attending'
+        )
+        
+        assert rsvp.id is not None
+        assert rsvp.user_id == regular_user.id
+        assert rsvp.event_id == future_event.id
+        assert rsvp.status == 'attending'
+        assert rsvp.created_at is not None
+    
+    def test_rsvp_relationships(self, regular_user, future_event):
+        """Test RSVP relationships with User and Event"""
+        from models import RSVP
+        
+        rsvp = RSVP.create(
+            user_id=regular_user.id,
+            event_id=future_event.id,
+            status='attending'
+        )
+        
+        # Test relationships
+        assert rsvp.user == regular_user
+        assert rsvp.event == future_event
+        assert rsvp in regular_user.rsvps
+        assert rsvp in future_event.rsvps
+    
+    def test_rsvp_status_validation(self, regular_user, future_event):
+        """Test RSVP status validation"""
+        from models import RSVP
+        
+        # Test valid statuses - note: model uses 'attending' as default
+        valid_statuses = ['attending', 'not_attending', 'maybe']
+        
+        for status in valid_statuses:
+            rsvp = RSVP.create(
+                user_id=regular_user.id,
+                event_id=future_event.id,
+                status=status
+            )
+            
+            assert rsvp.status == status
+            
+            # Clean up for next iteration
+            rsvp.delete()
+    
+    def test_user_rsvp_for_event(self, regular_user, future_event):
+        """Test finding user's RSVP for specific event"""
+        from models import RSVP
+        
+        # No RSVP initially
+        rsvps = RSVP.get_user_rsvps(regular_user.id)
+        event_rsvps = [r for r in rsvps if r.event_id == future_event.id]
+        assert len(event_rsvps) == 0
+        
+        # Create RSVP using the create method
+        new_rsvp = RSVP.create(
+            user_id=regular_user.id,
+            event_id=future_event.id,
+            status='attending'
+        )
+        
+        # Should find the RSVP
+        rsvps = RSVP.get_user_rsvps(regular_user.id)
+        event_rsvps = [r for r in rsvps if r.event_id == future_event.id]
+        assert len(event_rsvps) == 1
+        assert event_rsvps[0].id == new_rsvp.id
+        assert event_rsvps[0].status == 'attending'
+
+
+class TestEventRSVPIntegration:
+    """Test integration between Events and RSVPs"""
+    
+    def test_event_rsvp_counts(self, future_event, regular_user, admin_user):
+        """Test counting RSVPs for an event"""
+        from models import RSVP
+        
+        # Create multiple RSVPs using the create method
+        RSVP.create(user_id=regular_user.id, event_id=future_event.id, status='attending')
+        RSVP.create(user_id=admin_user.id, event_id=future_event.id, status='not_attending')
+        
+        # Test attendee count (only 'attending' status)
+        assert future_event.get_attendee_count() == 1
+        
+        # Test total RSVPs
+        event_rsvps = RSVP.get_event_rsvps(future_event.id)
+        assert len(event_rsvps) == 2
+    
+    def test_event_attendee_list(self, future_event, regular_user, admin_user):
+        """Test getting list of attendees for an event"""
+        from models import RSVP
+        
+        # Create RSVPs using the create method
+        RSVP.create(user_id=regular_user.id, event_id=future_event.id, status='attending')
+        RSVP.create(user_id=admin_user.id, event_id=future_event.id, status='not_attending')
+        
+        # Test attendee lists (only attending users)
+        attending = future_event.get_attendees()
+        
+        assert len(attending) == 1
+        assert attending[0].username == 'testuser'
+

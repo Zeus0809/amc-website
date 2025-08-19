@@ -1,375 +1,196 @@
 """
-Test Admin Approval Process
-Tests the complete user registration and admin approval workflow
+Test admin approval workflow functionality
 """
-import os
-import sys
-from datetime import datetime, timedelta
+from models import User
 
-# Add project root to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def test_user_registration_flow():
-    """Test new user registration defaults"""
-    print('=== Testing User Registration Flow ===\n')
+class TestUserApprovalWorkflow:
+    """Test admin approval and denial methods"""
     
-    import tempfile
-    test_db_path = os.path.join(tempfile.gettempdir(), 'test_registration.db')
-    os.environ['DEV_DATABASE_URL'] = f'sqlite:///{test_db_path}'
-    
-    try:
-        from app import app
-        with app.app_context():
-            from models import db, User
-            
-            if os.path.exists(test_db_path):
-                os.remove(test_db_path)
-            
-            db.create_all()
-            
-            # Simulate new user registration
-            new_user = User(
-                username='newuser',
-                email='newuser@email.com',
-                password='password123',
-                first_name='New',
-                last_name='User'
-            )
-            # Don't set is_approved - should default to False
-            
-            db.session.add(new_user)
-            db.session.commit()
-            
-            print(f'✅ New user registered: {new_user.full_name}')
-            print(f'   - Username: {new_user.username}')
-            print(f'   - Email: {new_user.email}')
-            print(f'   - Is approved: {new_user.is_approved}')
-            print(f'   - Is admin: {new_user.is_admin}')
-            print(f'   - Can login: {new_user.can_login()}')
-            
-            if not new_user.is_approved and not new_user.can_login():
-                print('✅ New user correctly starts unapproved and cannot login')
-                return True
-            else:
-                print('❌ New user should be unapproved and unable to login')
-                return False
-                
-    except Exception as e:
-        print(f'❌ Registration flow test failed: {e}')
-        return False
-    finally:
-        if os.path.exists(test_db_path):
-            os.remove(test_db_path)
-
-def test_admin_creation():
-    """Test admin user creation and privileges"""
-    print('\n=== Testing Admin Creation ===\n')
-    
-    import tempfile
-    test_db_path = os.path.join(tempfile.gettempdir(), 'test_admin.db')
-    os.environ['DEV_DATABASE_URL'] = f'sqlite:///{test_db_path}'
-    
-    try:
-        from app import app
-        with app.app_context():
-            from models import db, User
-            
-            if os.path.exists(test_db_path):
-                os.remove(test_db_path)
-            
-            db.create_all()
-            
-            # Create admin user
-            admin = User(
-                username='admin',
-                email='admin@amc.com',
-                password='admin123',
-                first_name='Admin',
-                last_name='User',
-                is_admin=True
-            )
-            admin.is_approved = True  # Admin should be auto-approved
-            
-            db.session.add(admin)
-            db.session.commit()
-            
-            print(f'✅ Admin user created: {admin.full_name}')
-            print(f'   - Is admin: {admin.is_admin}')
-            print(f'   - Is approved: {admin.is_approved}')
-            print(f'   - Can login: {admin.can_login()}')
-            
-            if admin.is_admin and admin.is_approved and admin.can_login():
-                print('✅ Admin has correct privileges and can login')
-                return True
-            else:
-                print('❌ Admin should have privileges and login access')
-                return False
-                
-    except Exception as e:
-        print(f'❌ Admin creation test failed: {e}')
-        return False
-    finally:
-        if os.path.exists(test_db_path):
-            os.remove(test_db_path)
-
-def test_approval_process():
-    """Test the complete admin approval workflow"""
-    print('\n=== Testing Admin Approval Process ===\n')
-    
-    import tempfile
-    test_db_path = os.path.join(tempfile.gettempdir(), 'test_approval.db')
-    os.environ['DEV_DATABASE_URL'] = f'sqlite:///{test_db_path}'
-    
-    try:
-        from app import app
-        with app.app_context():
-            from models import db, User
-            
-            if os.path.exists(test_db_path):
-                os.remove(test_db_path)
-            
-            db.create_all()
-            
-            # Create admin
-            admin = User(
-                username='admin',
-                email='admin@amc.com',
-                password='admin123',
-                first_name='Admin',
-                last_name='User',
-                is_admin=True
-            )
-            admin.is_approved = True
-            
-            # Create pending user
-            pending_user = User(
-                username='pending',
-                email='pending@email.com',
-                password='password123',
-                first_name='Pending',
-                last_name='User'
-            )
-            
-            db.session.add_all([admin, pending_user])
-            db.session.commit()
-            
-            print('👑 Initial State:')
-            print(f'   Admin can login: {admin.can_login()}')
-            print(f'   Pending user can login: {pending_user.can_login()}')
-            
-            # Test approval process
-            print(f'\n📋 Admin approving user "{pending_user.username}"...')
-            pending_user.approve()
-            db.session.commit()
-            
-            print('✅ Approval completed')
-            print(f'   Pending user approved status: {pending_user.is_approved}')
-            print(f'   Pending user can now login: {pending_user.can_login()}')
-            
-            if pending_user.is_approved and pending_user.can_login():
-                print('✅ Approval process works correctly')
-                return True
-            else:
-                print('❌ Approval process failed')
-                return False
-                
-    except Exception as e:
-        print(f'❌ Approval process test failed: {e}')
-        return False
-    finally:
-        if os.path.exists(test_db_path):
-            os.remove(test_db_path)
-
-def test_pending_users_management():
-    """Test admin dashboard queries for user management"""
-    print('\n=== Testing Pending Users Management ===\n')
-    
-    import tempfile
-    test_db_path = os.path.join(tempfile.gettempdir(), 'test_management.db')
-    os.environ['DEV_DATABASE_URL'] = f'sqlite:///{test_db_path}'
-    
-    try:
-        from app import app
-        with app.app_context():
-            from models import db, User
-            
-            if os.path.exists(test_db_path):
-                os.remove(test_db_path)
-            
-            db.create_all()
-            
-            # Create mix of users
-            admin = User(
-                username='admin',
-                email='admin@amc.com',
-                password='admin123',
-                first_name='Admin',
-                last_name='User',
-                is_admin=True
-            )
-            admin.is_approved = True
-            
-            approved_user = User(
-                username='approved',
-                email='approved@email.com',
-                password='password123',
-                first_name='Approved',
-                last_name='User'
-            )
-            approved_user.approve()
-            
-            pending_user1 = User(
-                username='pending1',
-                email='pending1@email.com',
-                password='password123',
-                first_name='Pending1',
-                last_name='User'
-            )
-            
-            pending_user2 = User(
-                username='pending2',
-                email='pending2@email.com',
-                password='password123',
-                first_name='Pending2',
-                last_name='User'
-            )
-            
-            db.session.add_all([admin, approved_user, pending_user1, pending_user2])
-            db.session.commit()
-            
-            # Test admin queries
-            pending_users = User.get_pending_users()
-            approved_users = User.get_approved_users()
-            
-            print(f'📊 User Management Summary:')
-            print(f'   Total pending users: {len(pending_users)}')
-            for user in pending_users:
-                print(f'     - {user.full_name} ({user.email})')
-            
-            print(f'   Total approved users: {len(approved_users)}')
-            for user in approved_users:
-                print(f'     - {user.full_name} ({user.email}) [Admin: {user.is_admin}]')
-            
-            # Validate counts
-            if len(pending_users) == 2 and len(approved_users) == 2:
-                print('✅ User management queries work correctly')
-                return True
-            else:
-                print(f'❌ Expected 2 pending and 2 approved, got {len(pending_users)} pending and {len(approved_users)} approved')
-                return False
-                
-    except Exception as e:
-        print(f'❌ User management test failed: {e}')
-        return False
-    finally:
-        if os.path.exists(test_db_path):
-            os.remove(test_db_path)
-
-def test_access_control():
-    """Test that approval controls access properly"""
-    print('\n=== Testing Access Control ===\n')
-    
-    import tempfile
-    test_db_path = os.path.join(tempfile.gettempdir(), 'test_access.db')
-    os.environ['DEV_DATABASE_URL'] = f'sqlite:///{test_db_path}'
-    
-    try:
-        from app import app
-        with app.app_context():
-            from models import db, User, Event
-            
-            if os.path.exists(test_db_path):
-                os.remove(test_db_path)
-            
-            db.create_all()
-            
-            # Create users
-            approved_user = User(
-                username='approved',
-                email='approved@test.com',
-                password='password123',
-                first_name='Approved',
-                last_name='User'
-            )
-            approved_user.approve()
-            
-            unapproved_user = User(
-                username='unapproved',
-                email='unapproved@test.com',
-                password='password123',
-                first_name='Unapproved',
-                last_name='User'
-            )
-            
-            # Create event
-            event = Event(
-                title='Test Event',
-                date_time=datetime.now() + timedelta(days=5),
-                description='Test event for access control'
-            )
-            
-            db.session.add_all([approved_user, unapproved_user, event])
-            db.session.commit()
-            
-            print('🔐 Access Control Test:')
-            print(f'   Approved user can login: {approved_user.can_login()}')
-            print(f'   Unapproved user can login: {unapproved_user.can_login()}')
-            
-            # The key test: only approved users should be able to login
-            # RSVP access will be controlled by login requirement in routes
-            if approved_user.can_login() and not unapproved_user.can_login():
-                print('✅ Access control working - login restricted to approved users')
-                return True
-            else:
-                print('❌ Access control failed')
-                return False
-                
-    except Exception as e:
-        print(f'❌ Access control test failed: {e}')
-        return False
-    finally:
-        if os.path.exists(test_db_path):
-            os.remove(test_db_path)
-
-def run_approval_tests():
-    """Run all admin approval workflow tests"""
-    print('🔑 AMC Website - Admin Approval Workflow Tests\n')
-    print('=' * 60)
-    
-    tests = [
-        test_user_registration_flow,
-        test_admin_creation,
-        test_approval_process,
-        test_pending_users_management,
-        test_access_control
-    ]
-    
-    passed = 0
-    failed = 0
-    
-    for test in tests:
-        try:
-            if test():
-                passed += 1
-                print(f'\n✅ {test.__name__} PASSED')
-            else:
-                failed += 1
-                print(f'\n❌ {test.__name__} FAILED')
-        except Exception as e:
-            failed += 1
-            print(f'\n❌ {test.__name__} FAILED with exception: {e}')
+    def test_user_approve_method(self, pending_user):
+        """Test that approve() method correctly approves a user"""
+        # Verify initial state
+        assert pending_user.is_approved is False
+        assert pending_user.is_active is True
+        assert pending_user.can_login() is False
         
-        print('-' * 60)
+        # Approve user
+        pending_user.approve()
+        
+        # Verify approved state
+        assert pending_user.is_approved is True
+        assert pending_user.is_active is True
+        assert pending_user.can_login() is True
+        
+        # Verify persistence in database
+        user_from_db = User.query.get(pending_user.id)
+        assert user_from_db.is_approved is True
+        assert user_from_db.can_login() is True
     
-    print(f'\n🎉 Test Summary: {passed} passed, {failed} failed')
+    def test_user_deny_method(self, pending_user):
+        """Test that deny() method correctly denies a user"""
+        # Verify initial state
+        assert pending_user.is_approved is False
+        assert pending_user.is_active is True
+        assert pending_user.can_login() is False
+        
+        # Deny user
+        pending_user.deny()
+        
+        # Verify denied state
+        assert pending_user.is_approved is False
+        assert pending_user.is_active is False
+        assert pending_user.can_login() is False
+        
+        # Verify persistence in database
+        user_from_db = User.query.get(pending_user.id)
+        assert user_from_db.is_approved is False
+        assert user_from_db.is_active is False
+        assert user_from_db.can_login() is False
     
-    if failed == 0:
-        print('✅ All admin approval workflow tests PASSED!')
-        print('🔑 User registration and approval system ready for production!')
-        return True
-    else:
-        print('❌ Some approval workflow tests FAILED!')
-        return False
+    def test_deny_approved_user(self, regular_user):
+        """Test denying a previously approved user"""
+        # Verify initial approved state
+        assert regular_user.is_approved is True
+        assert regular_user.is_active is True
+        assert regular_user.can_login() is True
+        
+        # Deny the approved user
+        regular_user.deny()
+        
+        # Verify denied state
+        assert regular_user.is_approved is False
+        assert regular_user.is_active is False
+        assert regular_user.can_login() is False
+    
+    def test_approve_denied_user(self, pending_user):
+        """Test approving a user that was previously denied"""
+        # First deny the user
+        pending_user.deny()
+        assert pending_user.is_approved is False
+        assert pending_user.is_active is False
+        assert pending_user.can_login() is False
+        
+        # Now approve the user
+        pending_user.approve()
+        
+        # Verify approved state (but still inactive from denial)
+        assert pending_user.is_approved is True
+        assert pending_user.is_active is False  # deny() sets this to False
+        assert pending_user.can_login() is False  # requires both approved AND active
 
-if __name__ == '__main__':
-    run_approval_tests()
+
+class TestUserApprovalQueries:
+    """Test user approval query methods"""
+    
+    def test_get_pending_users(self, pending_user):
+        """Test getting all pending users"""
+        pending_users = User.get_pending_users()
+        
+        # Should only contain the pending user
+        assert len(pending_users) == 1
+        assert pending_users[0].id == pending_user.id
+        assert pending_users[0].is_approved is False
+        
+        # Should be ordered by created_at desc (most recent first)
+        assert pending_users[0].username == 'pendinguser'
+    
+    def test_get_approved_users(self, admin_user, regular_user, pending_user):
+        """Test getting all approved users"""
+        approved_users = User.get_approved_users()
+        
+        # Should contain admin and regular user, not pending
+        assert len(approved_users) == 2
+        user_ids = [user.id for user in approved_users]
+        assert admin_user.id in user_ids
+        assert regular_user.id in user_ids
+        assert pending_user.id not in user_ids
+        
+        # Should be ordered by first_name, last_name
+        assert all(user.is_approved for user in approved_users)
+    
+    def test_pending_users_after_approval(self, pending_user):
+        """Test that pending users list updates after approval"""
+        # Initially should have pending user
+        pending_users = User.get_pending_users()
+        assert len(pending_users) == 1
+        assert pending_users[0].id == pending_user.id
+        
+        # Approve the user
+        pending_user.approve()
+        
+        # Should no longer be in pending list
+        pending_users_after = User.get_pending_users()
+        assert len(pending_users_after) == 0
+        
+        # Should now be in approved list
+        approved_users = User.get_approved_users()
+        approved_ids = [user.id for user in approved_users]
+        assert pending_user.id in approved_ids
+
+
+class TestApprovalWorkflowIntegration:
+    """Test integration scenarios for approval workflow"""
+    
+    def test_approval_workflow_complete_cycle(self, db):
+        """Test complete user approval workflow from registration to approval"""
+        # Create a new pending user (simulating registration)
+        new_user = User(
+            username='newmember',
+            email='new@example.com',
+            password='password123',
+            first_name='New',
+            last_name='Member'
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Verify initial pending state
+        assert new_user.is_approved is False
+        assert new_user.is_active is True
+        assert new_user.can_login() is False
+        
+        # Should appear in pending users
+        pending_users = User.get_pending_users()
+        assert new_user.id in [user.id for user in pending_users]
+        
+        # Admin approves user
+        new_user.approve()
+        
+        # Verify approved state
+        assert new_user.can_login() is True
+        
+        # Should no longer be in pending list
+        pending_users_after = User.get_pending_users()
+        assert new_user.id not in [user.id for user in pending_users_after]
+        
+        # Should be in approved list
+        approved_users = User.get_approved_users()
+        assert new_user.id in [user.id for user in approved_users]
+    
+    def test_multiple_approval_operations(self, db):
+        """Test multiple approve/deny operations don't cause issues"""
+        new_user = User(
+            username='testcycle',
+            email='cycle@example.com', 
+            password='password123',
+            first_name='Test',
+            last_name='Cycle'
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Multiple approvals should be safe
+        new_user.approve()
+        new_user.approve()
+        assert new_user.is_approved is True
+        assert new_user.can_login() is True
+        
+        # Deny after approval
+        new_user.deny()
+        assert new_user.can_login() is False
+        
+        # Multiple denials should be safe
+        new_user.deny()
+        assert new_user.is_approved is False
+        assert new_user.is_active is False

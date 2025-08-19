@@ -671,3 +671,20 @@ So __all__ is Python's way of letting you define the public interface of your pa
 
 ####################################################################################################
 
+Explanation of What Happened:
+When you removed what appeared to be "unused" function parameters, you actually removed pytest fixtures. In pytest, fixtures are a powerful dependency injection system where:
+
+Fixture parameters automatically run setup code - Even if you don't directly use the variable in your test, declaring it as a parameter causes pytest to run the fixture function.
+
+The missing fixtures were:
+
+admin_user, regular_user, pending_user - These create test users in the database
+future_event - This creates a test event in the database
+Without these fixtures:
+
+test_user_queries had no users to query, so get_pending_users() returned 0 instead of 1
+test_upcoming_events_query had no events to query, so get_upcoming_events() returned 0 instead of 1
+Key Lesson:
+In pytest, fixture parameters are never "unused" - they're dependency declarations that trigger setup code. Even if you don't reference the variable directly in your test, the fixture still runs and prepares the test environment.
+
+####################################################################################################
