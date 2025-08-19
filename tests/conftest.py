@@ -14,13 +14,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 @pytest.fixture(scope='function')
 def app():
     """Create a Flask app configured for testing"""
-    # Use in-memory SQLite database for testing
-    os.environ['DEV_DATABASE_URL'] = 'sqlite:///:memory:'
-    os.environ['TESTING'] = 'True'
+    from app import create_app
     
-    from app import app
-    app.config['TESTING'] = True
-    app.config['WTF_CSRF_ENABLED'] = False
+    # Create app with testing configuration
+    app = create_app('testing')
     
     yield app
 

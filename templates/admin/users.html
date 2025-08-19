@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - User Management - Arlington Men's Circle{% endblock %}
+
+{% block content %}
+<h1>User Management</h1>
+
+<h2>Pending Approvals ({{ pending_users|length }})</h2>
+{% if pending_users %}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Registered</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in pending_users %}
+            <tr>
+                <td>{{ user.full_name }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <a href="{{ url_for('auth.approve_user', user_id=user.id) }}">Approve</a>
+                    <a href="{{ url_for('auth.deny_user', user_id=user.id) }}">Deny</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No pending user approvals.</p>
+{% endif %}
+
+<h2>All Users ({{ all_users|length }})</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Status</th>
+            <th>Admin</th>
+            <th>Registered</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in all_users %}
+        <tr>
+            <td>{{ user.full_name }}</td>
+            <td>{{ user.username }}</td>
+            <td>
+                {% if user.is_approved %}
+                    {% if user.is_active %}Approved{% else %}Inactive{% endif %}
+                {% else %}
+                    Pending
+                {% endif %}
+            </td>
+            <td>{{ 'Yes' if user.is_admin else 'No' }}</td>
+            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p><a href="{{ url_for('events.events_list') }}">Back to Events</a></p>
+{% endblock %}
