@@ -3,19 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block description %}Arlington Men's Circle - Private social events and networking{% endblock %}">
+    <meta name="theme-color" content="#ef8f36">
     <title>{% block title %}Arlington Men's Circle{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    <!-- Favicon (using logo for now) -->
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/logo.jpeg') }}">
+    
+    {% block head %}{% endblock %}
 </head>
 <body>
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="flash-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <!-- Logo -->
+                <div class="logo">
+                    <img src="{{ url_for('static', filename='images/logo.jpeg') }}" alt="Arlington Men's Circle Logo">
+                    <span class="logo-text">Arlington Men's Circle</span>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="nav">
+                    <!-- Desktop Navigation -->
+                    <ul class="nav-links">
+                        {% if current_user.is_authenticated %}
+                            <li><a href="{{ url_for('events.events_list') }}" {% if request.endpoint == 'events.events_list' %}class="active"{% endif %}>Events</a></li>
+                            <li><a href="{{ url_for('events.about') }}" {% if request.endpoint == 'events.about' %}class="active"{% endif %}>About</a></li>
+                            {% if current_user.is_admin %}
+                                <li><a href="{{ url_for('auth.admin_users') }}" {% if request.endpoint == 'auth.admin_users' %}class="active"{% endif %}>Admin</a></li>
+                            {% endif %}
+                            <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+                        {% else %}
+                            <li><a href="{{ url_for('events.about') }}" {% if request.endpoint == 'events.about' %}class="active"{% endif %}>About</a></li>
+                            <li><a href="{{ url_for('auth.login') }}" {% if request.endpoint == 'auth.login' %}class="active"{% endif %}>Login</a></li>
+                            <li><a href="{{ url_for('auth.register') }}" {% if request.endpoint == 'auth.register' %}class="active"{% endif %}>Register</a></li>
+                        {% endif %}
+                    </ul>
+                    
+                    <!-- Mobile Menu Button -->
+                    <button class="menu-toggle" type="button" aria-label="Toggle mobile menu">
+                        ☰
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
 
-    <!-- Main content -->
-    {% block content %}{% endblock %}
+    <!-- Mobile Navigation Overlay -->
+    <div class="mobile-nav">
+        <button class="mobile-nav-close" type="button" aria-label="Close mobile menu">×</button>
+        <ul class="mobile-nav-links">
+            {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('events.events_list') }}" {% if request.endpoint == 'events.events_list' %}class="active"{% endif %}>Events</a></li>
+                <li><a href="{{ url_for('events.about') }}" {% if request.endpoint == 'events.about' %}class="active"{% endif %}>About</a></li>
+                {% if current_user.is_admin %}
+                    <li><a href="{{ url_for('auth.admin_users') }}" {% if request.endpoint == 'auth.admin_users' %}class="active"{% endif %}>Admin</a></li>
+                {% endif %}
+                <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+            {% else %}
+                <li><a href="{{ url_for('events.about') }}" {% if request.endpoint == 'events.about' %}class="active"{% endif %}>About</a></li>
+                <li><a href="{{ url_for('auth.login') }}" {% if request.endpoint == 'auth.login' %}class="active"{% endif %}>Login</a></li>
+                <li><a href="{{ url_for('auth.register') }}" {% if request.endpoint == 'auth.register' %}class="active"{% endif %}>Register</a></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Arlington Men's Circle. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

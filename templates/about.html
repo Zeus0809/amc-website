@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}About Us - Arlington Men's Circle{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">About Arlington Men's Circle</h1>
+    <p class="page-subtitle">Learn more about our community</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Our Mission</h3>
+    </div>
+    <p>About page content coming in Chunk 4B!</p>
+    <p>Arlington Men's Circle is a private social group focused on building meaningful connections and organizing engaging events for men in the Arlington area.</p>
+    
+    <div class="mt-lg">
+        <a href="{{ url_for('events.events_list') }}" class="btn btn-primary">Back to Events</a>
+    </div>
+</div>
+{% endblock %}

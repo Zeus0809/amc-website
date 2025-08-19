@@ -43,7 +43,7 @@ def create_app(config_name=None):
     # User loader for Flask-Login
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(user_id)
+        return db.session.get(User, user_id)
     
     # Register blueprints (routes)
     from routes.auth import auth_bp
@@ -55,7 +55,7 @@ def create_app(config_name=None):
     return app
 
 # Create app instance for development
-app = create_app()
+app = create_app('development')
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5000)

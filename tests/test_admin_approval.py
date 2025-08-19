@@ -1,7 +1,7 @@
 """
 Test admin approval workflow functionality
 """
-from models import User
+from models import User, db
 
 
 class TestUserApprovalWorkflow:
@@ -23,7 +23,7 @@ class TestUserApprovalWorkflow:
         assert pending_user.can_login() is True
         
         # Verify persistence in database
-        user_from_db = User.query.get(pending_user.id)
+        user_from_db = db.session.get(User, pending_user.id)
         assert user_from_db.is_approved is True
         assert user_from_db.can_login() is True
     
@@ -43,7 +43,7 @@ class TestUserApprovalWorkflow:
         assert pending_user.can_login() is False
         
         # Verify persistence in database
-        user_from_db = User.query.get(pending_user.id)
+        user_from_db = db.session.get(User, pending_user.id)
         assert user_from_db.is_approved is False
         assert user_from_db.is_active is False
         assert user_from_db.can_login() is False

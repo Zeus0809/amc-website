@@ -10,7 +10,9 @@ class Config:
     # Security
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     
-    # Database
+    # Database - single URI for all environments
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance', 'amc_website.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Email settings (abstract for flexibility)
@@ -31,22 +33,18 @@ class Config:
     AMC_GROUP_NAME = 'Arlington Men\'s Circle'
 
 class DevelopmentConfig(Config):
-    """Development configuration - SQLite, console email."""
+    """Development configuration - console email, debug mode."""
     
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance', 'amc_website_dev.db')
     
     # Email to console for development
     MAIL_SUPPRESS_SEND = False
     MAIL_DEBUG = True
 
 class ProductionConfig(Config):
-    """Production configuration - PostgreSQL, SES email."""
+    """Production configuration - SES email, no debug."""
     
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance', 'amc_website.db')
     
     # Production email settings (SES)
     MAIL_SUPPRESS_SEND = False
