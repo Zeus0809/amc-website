@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables from .env file (if it exists)
+# In Docker, environment variables are set directly, so this is optional
 load_dotenv()
 
 class Config:
